@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Dealskart — Auto Earnings (Futuristic)</title>
+
+<!-- Tailwind for quick modern styling -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- GSAP for advanced smooth animations -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+<style>
+  :root{
+    --bg-dark: #03040a;
+    --neon-green: #9af34b;
+    --neon-yellow:#ffd84b;
+    --neon-cyan: #06b6d4;
+    --metal-1: #10131a;
+    --metal-2: #2a3642;
+    --glass: rgba(255,255,255,0.03);
+  }
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+    background:
+      radial-gradient(800px 300px at 10% 10%, rgba(154,243,75,0.03), transparent 8%),
+      radial-gradient(900px 300px at 90% 80%, rgba(255,216,75,0.02), transparent 8%),
+      linear-gradient(180deg,var(--bg-dark), #07102a 60%);
+    color:#e6eef8;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    min-height:100vh;
+  }
+
+  /* header brand */
+  .brand { display:flex; gap:10px; align-items:center; font-weight:800; }
+  .brand .logoDot { width:12px; height:12px; border-radius:999px; background:linear-gradient(90deg,var(--neon-green),var(--neon-yellow)); box-shadow:0 8px 36px rgba(154,243,75,0.12); }
+
+  /* glass surfaces */
+  .glass {
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border:1px solid rgba(255,255,255,0.04);
+    backdrop-filter: blur(8px) saturate(120%);
+    border-radius:12px;
+  }
+
+  /* hero */
+  .hero { min-height:64vh; display:flex; align-items:center; padding:48px 16px; }
+  .title { font-size:2.6rem; font-weight:900; line-height:1; letter-spacing:-0.02em; }
+  .title .accent { color:var(--neon-green); text-shadow: 0 12px 40px rgba(154,243,75,0.06); }
+
+  /* scene */
+  #scene { width:100%; height:360px; border-radius:16px; overflow:hidden; position:relative; }
+  #autoSVG { width:100%; height:100%; display:block; }
+
+  /* wheels inner spin */
+  .wheelInner { transform-origin:center; }
+
+  /* headlights glow */
+  .headlightGlow { filter: drop-shadow(0 8px 40px rgba(255,220,80,0.25)); }
+
+  /* tick */
+  .tickWrap{ position:fixed; left:50%; top:28%; transform:translate(-50%,-50%); z-index:90; display:none; }
+  .tickCircle{ width:110px;height:110px;border-radius:999px;background:linear-gradient(90deg,var(--neon-green),var(--neon-cyan));display:flex;align-items:center;justify-content:center; transform:scale(.6); animation: pop .45s ease forwards; box-shadow: 0 12px 40px rgba(6,182,212,0.12); }
+  @keyframes pop{ from{transform:scale(.6);opacity:0} to{transform:scale(1);opacity:1} }
+  .tick{ width:52px;height:30px;border-left:5px solid white;border-bottom:5px solid white; transform: rotate(-45deg); margin-top:8px; margin-left:6px; opacity:0; animation: tickIn .25s .15s forwards; }
+  @keyframes tickIn{ to{ opacity:1; transform: rotate(-45deg) translateY(0);} }
+
+  /* modal */
+  .modalBg{ position:fixed; inset:0; background:rgba(2,6,23,0.6); display:none; align-items:center; justify-content:center; z-index:100; }
+  .modal { width:100%; max-width:560px; padding:18px; border-radius:12px; }
+
+  /* login */
+  #loginWrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:120; }
+  .loginCard { width:420px; max-width:94%; padding:22px; border-radius:14px; border:1px solid rgba(255,255,255,0.06); background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); backdrop-filter: blur(8px); box-shadow: 0 20px 60px rgba(2,6,23,0.6); }
+
+  .inputGlass { background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005)); border:1px solid rgba(255,255,255,0.04); padding:10px 12px; border-radius:10px; color:#e6eef8; outline:none; width:100%; }
+
+  /* glowing border for login card */
+  .glowBorder {
+    box-shadow: 0 6px 28px rgba(154,243,75,0.06), 0 0 0 2px rgba(154,243,75,0.02) inset;
+    border: 1px solid rgba(154,243,75,0.06);
+  }
+
+  /* lock icon animation */
+  .lockIcon { width:42px; height:42px; border-radius:10px; display:grid; place-items:center; background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.04); }
+
+  /* small util */
+  .disabled{ opacity:0.6; pointer-events:none; }
+
+  @media (max-width:768px){
+    .title{ font-size:1.6rem }
+    #scene{ height:220px }
+  }
+</style>
+</head>
+<body>
+
+  <!-- LOGIN (full-screen) -->
+  <div id="loginWrap">
+    <div class="loginCard glass glowBorder">
+      <div class="flex items-center justify-between mb-4">
+        <div class="brand"><div class="logoDot" style="background:linear-gradient(90deg,var(--neon-green),var(--neon-yellow)); width:14px;height:14px;border-radius:999px; box-shadow:0 10px 40px rgba(154,243,75,0.12)"></div>
+          <div>
+            <div style="font-weight:800">Dealskart</div>
+            <div style="font-size:12px;color:rgba(230,238,248,0.5)">Auto Earnings — Login</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:rgba(230,238,248,0.5)">Secure · Neon · Street</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="text-xs text-gray-300">Username / Email</label>
+        <input id="loginUser" class="inputGlass mt-1" placeholder="Your name or email" />
+      </div>
+
+      <div class="mb-3 flex items-center gap-3">
+        <div class="lockIcon" id="lockIcon" title="lock">
+          <!-- simple lock SVG -->
+          <svg id="lockSVG" width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <rect x="6" y="10" width="12" height="10" rx="2" stroke="white" stroke-opacity="0.9" stroke-width="1.4"></rect>
+            <path d="M8 10V8a4 4 0 0 1 8 0v2" stroke="white" stroke-opacity="0.9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </div>
+        <div style="flex:1">
+          <label class="text-xs text-gray-300">Password</label>
+          <input id="loginPwd" type="password" class="inputGlass mt-1" placeholder="Enter password" />
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button id="loginBtn" class="flex-1 px-4 py-2 rounded bg-gradient-to-r from-yellow-400 to-green-400 text-black font-semibold" onclick="doLogin()">Login</button>
+        <button class="px-4 py-2 rounded bg-white/6" onclick="demoLogin()">Demo</button>
+      </div>
+
+      <div class="mt-4 text-xs text-gray-400">Tip: Password for demo is <strong>1912</strong></div>
+    </div>
+    <!-- small auto driving loop at bottom of login -->
+    <div style="position:absolute; bottom:28px; left:8%; right:8%; pointer-events:none; overflow:hidden; height:60px;">
+      <svg width="100%" height="60" viewBox="0 0 1200 120" preserveAspectRatio="xMidYMid meet">
+        <g id="loginAuto" transform="translate(-200,0)">
+          <rect x="0" y="20" rx="10" width="180" height="50" fill="url(#loginAutoGrad)"></rect>
+        </g>
+        <defs>
+          <linearGradient id="loginAutoGrad" x1="0" x2="1"><stop offset="0" stop-color="#ffd84b"/><stop offset="1" stop-color="#9af34b"/></linearGradient>
+        </defs>
+      </svg>
+    </div>
+  </div>
+
+  <!-- MAIN PAGE -->
+  <header class="max-w-6xl mx-auto flex items-center justify-between py-4 px-4">
+    <div class="brand"><div class="logoDot"></div><div style="font-weight:800">Dealskart</div></div>
+    <div class="flex gap-3 items-center">
+      <div id="userTag" class="text-sm text-gray-300 hidden">Welcome</div>
+      <button id="logoutBtn" class="px-3 py-2 rounded bg-red-50 text-red-500 hidden" onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- HERO with assembly scene -->
+  <section class="hero">
+    <div class="max-w-6xl w-full px-4 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+      <div>
+        <div class="title">Dealskart <span class="accent">Daily Auto Earnings</span></div>
+        <p class="text-gray-300 max-w-lg mt-4">Track your rides, record your income. Scroll down and watch your auto be assembled — part-by-part — then record today's earning.</p>
+        <div class="mt-6 flex gap-3">
+          <button id="cta" class="glass px-4 py-3 rounded-lg flex items-center gap-3" onclick="scrollToForm()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div class="text-sm font-semibold">Record Today's Earning</div>
+          </button>
+          <button class="px-4 py-3 rounded bg-white/6" onclick="demoFill()">Demo</button>
+        </div>
+      </div>
+
+      <div id="scene" class="glass p-4">
+        <!-- CITY STREET subtle background -->
+        <div style="position:absolute; inset:0; opacity:0.06; background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><rect width=%22120%22 height=%22120%22 fill=%22%23060b12%22/><circle cx=%2260%22 cy=%2260%22 r=%222%22 fill=%22%23888888%22 opacity=%22.04%22/></svg>');"></div>
+
+        <!-- big realistic-ish auto SVG built in parts -->
+        <svg id="autoSVG" viewBox="0 0 860 360" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="metalG" x1="0" x2="1"><stop offset="0" stop-color="#3b4752"/><stop offset="1" stop-color="#1b2430"/></linearGradient>
+            <linearGradient id="accentG" x1="0" x2="1"><stop offset="0" stop-color="#ffd84b"/><stop offset="1" stop-color="#9af34b"/></linearGradient>
+            <filter id="glow"><feGaussianBlur stdDeviation="6" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+
+          <!-- ground shadow -->
+          <ellipse cx="430" cy="320" rx="200" ry="22" fill="rgba(2,6,23,0.65)"></ellipse>
+
+          <!-- wheels group -->
+          <g id="wheels" opacity="0">
+            <g id="wheelL" transform="translate(210,260)">
+              <circle r="42" fill="#0b1220"></circle>
+              <circle class="wheelInner" r="16" fill="#f3f4f6"></circle>
+              <!-- spokes for realistic look -->
+              <g stroke="#94a3b8" stroke-width="2" stroke-linecap="round" opacity="0.28">
+                <line x1="-8" y1="-4" x2="8" y2="4"></line>
+                <line x1="-8" y1="4" x2="8" y2="-4"></line>
+              </g>
+            </g>
+
+            <g id="wheelR" transform="translate(570,260)">
+              <circle r="42" fill="#0b1220"></circle>
+              <circle class="wheelInner" r="16" fill="#f3f4f6"></circle>
+              <g stroke="#94a3b8" stroke-width="2" stroke-linecap="round" opacity="0.28">
+                <line x1="-8" y1="-4" x2="8" y2="4"></line>
+                <line x1="-8" y1="4" x2="8" y2="-4"></line>
+              </g>
+            </g>
+          </g>
+
+          <!-- chassis (slides in) -->
+          <g id="chassis" opacity="0" transform="translate(-460,0)">
+            <rect x="200" y="140" rx="20" width="420" height="110" fill="url(#metalG)" stroke="#2b3946" stroke-width="2"></rect>
+            <rect x="220" y="110" rx="14" width="260" height="64" fill="#0c1b23" stroke="#0ea5a9" stroke-width="1.4"></rect>
+            <rect x="500" y="110" rx="12" width="80" height="64" fill="#0c1b23" stroke="#d1fae5" stroke-width="0.9"></rect>
+            <rect x="230" y="170" rx="6" width="80" height="32" fill="#0b1220" opacity="0.5"></rect>
+          </g>
+
+          <!-- roof & lights -->
+          <g id="roof" opacity="0" transform="translate(0,-120)">
+            <rect x="220" y="88" width="360" height="36" rx="10" fill="url(#accentG)" stroke="#fef08a" stroke-width="1.6" opacity="0.95"></rect>
+            <circle id="ltL" cx="250" cy="128" r="10" fill="#fff7c2" opacity="0"></circle>
+            <circle id="ltR" cx="540" cy="128" r="10" fill="#fff7c2" opacity="0"></circle>
+          </g>
+
+          <!-- final alive details -->
+          <g id="alive" opacity="0">
+            <rect x="300" y="142" rx="6" width="110" height="44" fill="rgba(99,102,241,0.06)"></rect>
+            <path d="M415 150 q20 -8 40 0" stroke="#60a5fa" stroke-width="2" fill="none" opacity="0.22"></path>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORM & DASHBOARD -->
+  <section id="formSection" class="py-12 px-4">
+    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- form -->
+      <div class="glass p-6 lg:col-span-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm text-gray-300">Record Today — Dealskart</div>
+            <div class="text-xs text-gray-400">One entry per day • Edit allowed</div>
+          </div>
+          <div class="text-xs text-gray-400">Date: <span id="dateToday"></span></div>
+        </div>
+
+        <div class="mt-4">
+          <label class="text-xs text-gray-300">Earning (₹)</label>
+          <input id="earning" type="number" inputmode="numeric" class="w-full mt-2 p-3 inputGlass" placeholder="e.g. 800" />
+        </div>
+        <div class="mt-3">
+          <label class="text-xs text-gray-300">Expense (₹)</label>
+          <input id="expense" type="number" inputmode="numeric" class="w-full mt-2 p-3 inputGlass" placeholder="optional" />
+        </div>
+        <div class="mt-3">
+          <label class="text-xs text-gray-300">Reason</label>
+          <textarea id="reason" rows="3" class="w-full mt-2 p-3 inputGlass" placeholder="fuel, repair..."></textarea>
+        </div>
+
+        <div class="mt-4 flex gap-2">
+          <button id="saveBtn" class="flex-1 px-4 py-2 rounded-lg bg-gradient-to-r from-yellow-400 to-green-400 font-semibold" onclick="onSaveClick()">Submit</button>
+          <button class="px-4 py-2 rounded-lg bg-white/6" onclick="clearForm()">Clear</button>
+        </div>
+        <div class="mt-3 text-xs text-gray-400">If today's record exists you'll be asked to edit it.</div>
+      </div>
+
+      <!-- dashboard -->
+      <div class="lg:col-span-2 space-y-4">
+        <!-- counters + controls -->
+        <div class="glass p-4 flex items-center justify-between gap-4">
+          <div class="grid grid-cols-3 gap-4 w-full">
+            <div><div class="text-xs text-gray-300">Today (net)</div><div id="todayCounter" class="text-2xl font-bold">₹ 0</div></div>
+            <div><div class="text-xs text-gray-300">This Month</div><div id="monthCounter" class="text-2xl font-bold">₹ 0</div></div>
+            <div><div class="text-xs text-gray-300">Last 7 days</div><div id="weekCounter" class="text-2xl font-bold">₹ 0</div></div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <select id="viewToggle" class="p-2 bg-transparent border rounded text-gray-200">
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly (last 7 days)</option>
+              <option value="monthly">Monthly</option>
+            </select>
+            <input id="monthPicker" type="month" class="p-2 border rounded hidden" />
+            <button onclick="refreshData()" class="px-3 py-2 bg-white/6 rounded">Refresh</button>
+          </div>
+        </div>
+
+        <div id="historyWrap" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- footer -->
+  <footer class="mx-auto max-w-6xl px-4 py-6">
+    <div class="flex justify-between items-center text-sm text-gray-300">
+      <div>© <strong>Dealskart</strong> — Futuristic Auto Earnings</div>
+      <div>Neon • Street • Realistic</div>
+    </div>
+  </footer>
+
+  <!-- tick and modal -->
+  <div id="tickWrap" class="tickWrap"><div class="tickCircle"><div class="tick"></div></div></div>
+  <div id="modalBg" class="modalBg"><div class="modal glass"><h3 id="modalTitle" class="text-white text-lg font-semibold mb-2">Confirm</h3><p id="modalMsg" class="text-gray-300 mb-4"></p><div class="flex justify-end gap-2"><button onclick="closeModal()" class="px-4 py-2 rounded bg-gray-800">Cancel</button><button id="modalConfirm" class="px-4 py-2 rounded bg-indigo-600">Yes</button></div></div></div>
+
+<script>
+/* ================= CONFIG - put your Apps Script Web App URL here ================ */
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwn5RbxrKCgptxz9wXr1PdH3-ezhv0Ng3dQcrJueppYMdcZyAsooL-A7umzF-jJcA0I/exec"; // <-- replace with /exec URL
+const PASSWORD = "1912";
+
+/* ================= UTIL ================= */
+const isoToday = ()=> new Date().toISOString().slice(0,10);
+const fmtINR = v => "₹ " + Number(v||0).toLocaleString('en-IN');
+
+/* DOM refs */
+document.getElementById('dateToday').textContent = isoToday();
+
+/* ================= GSAP Build Sequence ================= */
+gsap.registerPlugin(ScrollTrigger);
+function buildAutoSequence(){
+  const tl = gsap.timeline({ defaults:{ duration:0.9, ease:'power3.out' }});
+  tl.to("#wheels",{opacity:1, y:-12, stagger:0.12, onStart: ()=> {
+    gsap.to(".wheelInner",{rotation:360, duration:1, repeat:-1, ease:'linear'});
+  }});
+  tl.to("#chassis",{opacity:1, x:460}, "<0.12");
+  tl.to("#roof",{opacity:1, y:120, onComplete: ()=> {
+    gsap.to(["#ltL","#ltR"],{opacity:1, repeat:4, yoyo:true, duration:0.22});
+  }}, "<0.1");
+  tl.to("#alive",{opacity:1, onComplete: ()=> {
+    gsap.to("#autoSVG",{y:-6, repeat:3, yoyo:true, duration:0.18, ease:'sine.inOut'});
+  }}, "<0.12");
+}
+ScrollTrigger.create({ trigger:"#scene", start:"top center", onEnter: buildAutoSequence, once:true });
+
+/* hover headlights */
+const sceneEl = document.getElementById('scene');
+sceneEl.addEventListener('mouseenter', ()=> gsap.to(["#ltL","#ltR"],{opacity:1, duration:0.12}));
+sceneEl.addEventListener('mouseleave', ()=> gsap.to(["#ltL","#ltR"],{opacity:0.25, duration:0.4}));
+
+/* scroll small drive */
+ScrollTrigger.create({
+  trigger:"section",
+  start:"top top",
+  end:"bottom bottom",
+  scrub:0.7,
+  onUpdate: self => gsap.to("#autoSVG",{x: (self.progress-0.5)*160, duration:0.8, ease:"power1.out"})
+});
+
+/* ================= DATA management ================= */
+let allData = []; // fetched from server: {row,date,earning,expense,reason}
+async function fetchAll(){
+  try {
+    const res = await fetch(SCRIPT_URL);
+    const j = await res.json();
+    if(Array.isArray(j)){ allData = j.sort((a,b)=> b.date.localeCompare(a.date)); renderDashboard(); }
+    else { console.error('GET error', j); showToast('Server error'); }
+  } catch(e){ console.error(e); showToast('Network error: '+e); }
+}
+
+/* render dashboard cards + counters */
+function renderDashboard(){
+  const wrap = document.getElementById('historyWrap'); wrap.innerHTML = '';
+  const today = isoToday(); const monthPrefix = today.slice(0,7);
+  let todayNet=0, monthSum=0, weekSum=0;
+  const last7 = dateRange(7);
+
+  allData.forEach(it=>{
+    if(it.date === today) todayNet += (Number(it.earning||0) - Number(it.expense||0));
+    if(it.date.startsWith(monthPrefix)) monthSum += Number(it.earning||0);
+    if(last7.includes(it.date)) weekSum += Number(it.earning||0);
+
+    const net = Number(it.earning||0) - Number(it.expense||0);
+    const card = document.createElement('div'); card.className = 'glass p-4 rounded';
+    card.innerHTML = `<div class="flex justify-between"><div><div class="text-sm text-gray-300">${it.date}</div><div class="text-lg font-semibold">${fmtINR(it.earning)}</div><div class="text-xs text-gray-500">Expense: ${fmtINR(it.expense||0)}</div></div><div class="text-right"><div class="text-xs text-gray-300">Net</div><div class="text-lg font-bold">${fmtINR(net)}</div><div class="mt-2"><button class="px-3 py-1 bg-indigo-600 rounded text-sm" onclick='askEdit(${it.row})'>Edit</button></div></div></div><div class="text-sm text-gray-400 mt-2">${(it.reason||'—')}</div>`;
+    wrap.appendChild(card);
+  });
+
+  document.getElementById('todayCounter').textContent = fmtINR(todayNet);
+  document.getElementById('monthCounter').textContent = fmtINR(monthSum);
+  document.getElementById('weekCounter').textContent = fmtINR(weekSum);
+
+  gsap.from(".glass.p-4.rounded",{y:18, opacity:0, stagger:0.06, duration:0.6, ease:"power2.out"});
+}
+
+function dateRange(days){ const arr=[]; for(let i=0;i<days;i++){ const d=new Date(); d.setDate(d.getDate()-i); arr.push(d.toISOString().slice(0,10)); } return arr; }
+
+/* ================= SAVE / UPDATE logic ================= */
+let editingRow = null;
+
+async function onSaveClick(){
+  if(sessionStorage.getItem('dk_logged') !== '1'){ promptLogin(); return; }
+  const earning = document.getElementById('earning').value.trim(); if(!earning){ showToast('Enter numeric earning'); return; }
+  const expense = document.getElementById('expense').value.trim(); const reason = document.getElementById('reason').value.trim();
+  const today = isoToday();
+  const exists = allData.find(r=> r.date===today);
+  if(exists){ openModal('Record exists','Aaj ka record pehle se hai. Edit karna chahte ho?','Edit', ()=> startEdit(exists)); return; }
+
+  toggleSubmit(true);
+  try {
+    const res = await fetch(SCRIPT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=UTF-8' }, body: JSON.stringify({ action:'add', earning, expense, reason }) });
+    const j = await res.json();
+    if(j.status === 'ok'){ showTick(); autoReact(); await fetchAll(); clearForm(); showToast('Saved'); }
+    else if(j.status === 'error' && j.message === 'entry_exists'){ openModal('Server entry exists','Entry exists on server. Edit?','Edit', ()=> startEdit({ row: j.existingRow, date: j.existing.date, earning: j.existing.earning, expense: j.existing.expense, reason: j.existing.reason })); }
+    else { showToast('Save error: ' + (j.message||'unknown')); }
+  } catch(e){ showToast('Network error: '+e); } finally { toggleSubmit(false); }
+}
+
+function toggleSubmit(dis){ const btn=document.getElementById('saveBtn'); if(dis){ btn.classList.add('disabled'); btn.disabled=true; btn.textContent='Working...'; } else { btn.classList.remove('disabled'); btn.disabled=false; btn.textContent='Submit'; } }
+
+async function startEdit(record){
+  document.getElementById('earning').value = record.earning;
+  document.getElementById('expense').value = record.expense;
+  document.getElementById('reason').value = record.reason;
+  editingRow = record.row;
+  openModal('Edit entry','Autofilled values. Confirm update?','Update', submitUpdate);
+}
+
+async function submitUpdate(){
+  if(!editingRow){ showToast('No row selected'); return; }
+  const earning = document.getElementById('earning').value.trim(); if(!earning){ showToast('Earning required'); return; }
+  const expense = document.getElementById('expense').value.trim(); const reason = document.getElementById('reason').value.trim();
+  toggleSubmit(true);
+  try {
+    const res = await fetch(SCRIPT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=UTF-8' }, body: JSON.stringify({ action:'update', row: editingRow, date: isoToday(), earning, expense, reason }) });
+    const j = await res.json();
+    if(j.status==='ok'){ showTick(); autoReact(); await fetchAll(); editingRow=null; clearForm(); showToast('Updated'); } else { showToast('Update error: '+(j.message||'')); }
+  } catch(e){ showToast('Network error:'+e); } finally { toggleSubmit(false); closeModal(); }
+}
+
+/* askEdit from card */
+function askEdit(row){ const rec = allData.find(r=> r.row===row); if(rec) startEdit(rec); }
+
+/* helpers */
+function autoReact(){ gsap.fromTo("#autoSVG",{scale:1},{scale:1.02, duration:0.12, yoyo:true, repeat:3}); gsap.to("#autoSVG",{x:'+=12', duration:0.4, yoyo:true, repeat:1}); gsap.to(".wheelInner",{rotation:360, duration:0.7, ease:'linear'}); }
+function showTick(){ const w=document.getElementById('tickWrap'); w.style.display='block'; setTimeout(()=> w.style.display='none',900); }
+function clearForm(){ document.getElementById('earning').value=''; document.getElementById('expense').value=''; document.getElementById('reason').value=''; }
+
+/* modal */
+function openModal(title,msg,confirmText,cb){ document.getElementById('modalTitle').textContent=title; document.getElementById('modalMsg').textContent=msg; document.getElementById('modalBg').style.display='flex'; const btn=document.getElementById('modalConfirm'); btn.textContent = confirmText || 'Yes'; btn.onclick = ()=> { cb && cb(); }; }
+function closeModal(){ document.getElementById('modalBg').style.display='none'; }
+
+/* toast */
+function showToast(msg){ const el=document.createElement('div'); el.textContent=msg; el.style.position='fixed'; el.style.right='18px'; el.style.bottom='18px'; el.style.padding='10px 14px'; el.style.borderRadius='8px'; el.style.background='rgba(255,255,255,0.06)'; el.style.zIndex=120; document.body.appendChild(el); setTimeout(()=> el.remove(),2200); }
+
+/* weekly/monthly toggle */
+document.getElementById('viewToggle').addEventListener('change', e => {
+  const v=e.target.value;
+  document.getElementById('monthPicker').classList.toggle('hidden', v!=='monthly');
+  if(v==='monthly'){ const mp=document.getElementById('monthPicker').value || (new Date().toISOString().slice(0,7)); renderMonthly(mp); } else { renderDashboard(); }
+});
+document.getElementById('monthPicker').addEventListener('change', ()=> renderMonthly(document.getElementById('monthPicker').value) );
+
+function renderMonthly(ym){
+  const wrap=document.getElementById('historyWrap'); wrap.innerHTML=''; const filtered = allData.filter(r=> r.date.startsWith(ym)); if(!filtered.length){ wrap.innerHTML = '<div class="glass p-6">No records for this month.</div>'; return; }
+  let sum=0; filtered.forEach(it=>{ sum += Number(it.earning||0); const card=document.createElement('div'); card.className='glass p-4 rounded'; card.innerHTML=`<div class="flex justify-between"><div><div class="text-sm text-gray-300">${it.date}</div><div class="text-lg font-semibold">${fmtINR(it.earning)}</div></div><div><button class="px-3 py-1 bg-indigo-600 rounded text-sm" onclick='askEdit(${it.row})'>Edit</button></div></div><div class="text-sm text-gray-400 mt-2">${it.reason||''}</div>`; wrap.appendChild(card); });
+  document.getElementById('monthCounter').textContent = fmtINR(sum); gsap.from(".glass.p-4.rounded",{y:12, opacity:0, stagger:0.05});
+}
+
+/* refresh */
+function refreshData(){ fetchAll(); showToast('Refreshed'); }
+
+/* ================= LOGIN flow (futuristic login page) ================= */
+function demoLogin(){ document.getElementById('loginPwd').value = PASSWORD; doLogin(); }
+function doLogin(){
+  const p = document.getElementById('loginPwd').value;
+  const u = document.getElementById('loginUser').value || 'Driver';
+  const lock = document.getElementById('lockIcon');
+  // animate lock as typing: rotate slightly
+  gsap.fromTo('#lockIcon',{rotate:0},{rotate:8,duration:.06,yoyo:true,repeat:2,ease:'sine.inOut'});
+
+  if(p === PASSWORD){
+    sessionStorage.setItem('dk_logged','1');
+    document.getElementById('loginWrap').style.display='none';
+    document.getElementById('userTag').textContent = `Hi ${u}`; document.getElementById('userTag').classList.remove('hidden'); document.getElementById('logoutBtn').classList.remove('hidden');
+    // headlights flash and transition
+    gsap.to(["#ltL","#ltR"],{opacity:1, repeat:4, yoyo:true, duration:0.12});
+    gsap.to("#loginWrap",{opacity:0,duration:0.6, onComplete: ()=> { document.getElementById('loginWrap').remove(); }});
+    fetchAll();
+  } else {
+    // shake card and show hint
+    gsap.fromTo(".loginCard",{x:-6},{x:6,duration:0.06,yoyo:true,repeat:6, ease:'sine.inOut'});
+    showToast("Wrong password");
+  }
+}
+function doLogout(){ sessionStorage.removeItem('dk_logged'); location.reload(); }
+function promptLogin(){ /* not used because we show login overlay */ }
+
+/* ================= INIT on load ================= */
+window.addEventListener('load', async ()=>{
+  // drive loop on login auto
+  gsap.to("#loginAuto", { x: 1400, duration: 8, repeat: -1, ease:'linear' });
+
+  // If already logged show UI
+  if(sessionStorage.getItem('dk_logged') === '1'){ document.getElementById('loginWrap')?.remove(); document.getElementById('userTag').classList.remove('hidden'); document.getElementById('logoutBtn').classList.remove('hidden'); fetchAll(); }
+});
+
+/* numeric sanitize */
+document.getElementById('earning').addEventListener('input', e => e.target.value = e.target.value.replace(/[^0-9.]/g,''));
+document.getElementById('expense').addEventListener('input', e => e.target.value = e.target.value.replace(/[^0-9.]/g,''));
+
+window.refreshData = refreshData; window.askEdit = askEdit; window.clearForm = clearForm; window.demoFill = demoFill; window.doLogout = doLogout;
+
+/* ================= END ================= */
+</script>
+</body>
+</html>
