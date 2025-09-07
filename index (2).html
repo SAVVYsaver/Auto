@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Dealskart — Auto Earnings</title>
+
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- GSAP -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+<style>
+:root{ --bg:#03040a; --green:#9af34b; --yellow:#ffd84b; --cyan:#06b6d4; }
+*{ box-sizing: border-box }
+body{ margin:0; background:radial-gradient(1200px 600px at 70% -10%, rgba(154,243,75,.08), transparent),
+linear-gradient(180deg, #03040a 0%, #071024 55%, #03040a 100%); color:#e6eef8; font-family: Inter, system-ui; }
+.glass{ background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); border:1px solid rgba(255,255,255,.08); backdrop-filter: blur(8px); border-radius:14px; }
+.input{ background:transparent; border:1px solid rgba(255,255,255,.14); padding:12px 14px; border-radius:10px; width:100%; color:#e6eef8; }
+.btn{ border-radius:10px; padding:10px 14px; }
+.btn-primary{ background:linear-gradient(90deg, var(--yellow), var(--green)); color:#091016; font-weight:700; }
+.btn-ghost{ background:rgba(255,255,255,.06); color:#e6eef8; }
+.badge{ font-size:12px; color:#a3e635 }
+.tickWrap{ position:fixed; left:50%; top:24%; transform:translate(-50%,-50%); z-index:200; display:none; }
+.tickCircle{ width:110px;height:110px;border-radius:999px;background:linear-gradient(90deg,var(--green),var(--cyan));display:flex;align-items:center;justify-content:center; transform:scale(.7); animation: pop .45s ease forwards; box-shadow:0 12px 40px rgba(6,182,212,0.12); }
+@keyframes pop{ from{transform:scale(.7);opacity:0} to{transform:scale(1);opacity:1} }
+.tick{ width:52px;height:30px;border-left:5px solid white;border-bottom:5px solid white; transform: rotate(-45deg); margin-top:8px; margin-left:6px; opacity:0; animation: tickIn .25s .15s forwards; }
+@keyframes tickIn{ to{ opacity:1; transform: rotate(-45deg) translateY(0);} }
+.modalBg{ position:fixed; inset:0; background:rgba(2,6,23,.72); display:none; align-items:center; justify-content:center; z-index:210; padding:16px }
+.modal{ width:100%; max-width:560px; }
+.tableRow{ transition: transform .25s ease, opacity .25s; }
+.tableRow:hover{ transform: translateY(-2px); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div id="loginWrap" class="fixed inset-0 z-50 flex items-center justify-center" style="background:linear-gradient(180deg, rgba(2,6,23,.75), rgba(2,6,23,.75));">
+  <div class="glass p-6 w-full max-w-md">
+    <div class="flex items-center justify-between">
+      <div><div class="text-xl font-extrabold">Dealskart</div><div class="text-xs text-gray-300">Auto Earnings — Login</div></div>
+      <div class="badge">Neon • Street</div>
+    </div>
+    <div class="mt-4">
+      <label class="text-xs text-gray-300">Username (optional)</label>
+      <input id="loginUser" class="input mt-1" placeholder="Driver name (optional)"/>
+    </div>
+    <div class="mt-3">
+      <label class="text-xs text-gray-300">Password</label>
+      <div class="relative">
+        <input id="loginPwd" type="password" class="input mt-1 pr-10" placeholder="Enter password"/>
+        <span id="lockIcon" class="absolute right-3 top-1/2 -translate-y-1/2 opacity-70">🔒</span>
+      </div>
+      <div class="text-xs text-gray-400 mt-1">Password: <b>1912</b></div>
+    </div>
+    <div class="mt-4 flex gap-2">
+      <button class="btn btn-primary flex-1" onclick="doLogin()">Login</button>
+      <button class="btn btn-ghost" onclick="demoLogin()">Demo</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS TICK -->
+<div id="tickWrap" class="tickWrap"><div class="tickCircle"><div class="tick"></div></div></div>
+
+<!-- CONFIRM / SUMMARY MODAL -->
+<div id="modalBg" class="modalBg">
+  <div class="modal glass p-5">
+    <h3 id="modalTitle" class="text-lg font-semibold mb-1">Confirm</h3>
+    <p id="modalMsg" class="text-gray-300 mb-4">—</p>
+    <div id="modalExtra" class="text-sm text-gray-300 mb-3 hidden"></div>
+    <div class="flex justify-end gap-2">
+      <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+      <button id="modalConfirm" class="btn btn-primary">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header class="max-w-6xl mx-auto flex items-center justify-between px-4 py-4">
+  <div class="flex items-center gap-2">
+    <div style="width:12px;height:12px;border-radius:999px;background:linear-gradient(90deg,var(--green),var(--yellow));box-shadow:0 8px 36px rgba(154,243,75,.2)"></div>
+    <div class="font-bold">Dealskart</div>
+  </div>
+  <div class="flex items-center gap-3">
+    <div id="userTag" class="text-sm text-gray-300 hidden"></div>
+    <button id="logoutBtn" class="btn btn-ghost hidden" onclick="doLogout()">Logout</button>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="max-w-6xl mx-auto px-4 pb-10">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+    <div>
+      <div class="text-4xl font-extrabold mb-2">Dealskart <span style="color:var(--green)">Daily Auto Earnings</span></div>
+      <p class="text-gray-300 mb-4">Track your rides, record your income. Scroll to assemble the auto and start your day.</p>
+      <div class="flex gap-3 flex-wrap">
+        <button class="btn btn-primary" onclick="scrollToForm()">Record Today’s Earning</button>
+        <button class="btn btn-ghost" onclick="openPromptCopy()">Copy Prompt</button>
+      </div>
+    </div>
+    <div id="scene" class="glass p-4">
+      <!-- Realistic-styled vector auto (neon edges, metallic body) -->
+      <svg id="autoSVG" viewBox="0 0 800 360" preserveAspectRatio="xMidYMid meet" style="width:100%;height:280px">
+        <defs>
+          <linearGradient id="metalG" x1="0" x2="1"><stop offset="0" stop-color="#3b4752"/><stop offset="1" stop-color="#1b2430"/></linearGradient>
+          <linearGradient id="accentG" x1="0" x2="1"><stop offset="0" stop-color="#ffd84b"/><stop offset="1" stop-color="#9af34b"/></linearGradient>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
+            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <ellipse cx="400" cy="330" rx="200" ry="18" fill="rgba(2,6,23,.55)"></ellipse>
+        <g id="wheels" opacity="0">
+          <g id="wheelL" transform="translate(200,260)">
+            <circle r="42" fill="#0b1220"></circle><circle class="wheelInner" r="14" fill="#f3f4f6"></circle>
+          </g>
+          <g id="wheelR" transform="translate(560,260)">
+            <circle r="42" fill="#0b1220"></circle><circle class="wheelInner" r="14" fill="#f3f4f6"></circle>
+          </g>
+        </g>
+        <g id="chassis" opacity="0" transform="translate(-440,0)">
+          <rect x="200" y="140" rx="16" width="400" height="110" fill="url(#metalG)" stroke="#2b3946" stroke-width="2"></rect>
+          <rect x="220" y="110" rx="12" width="250" height="64" fill="#0c1b23" stroke="#0ea5a9" stroke-width="1.2"></rect>
+        </g>
+        <g id="roof" opacity="0" transform="translate(0,-120)">
+          <rect x="220" y="88" width="360" height="36" rx="10" fill="url(#accentG)" filter="url(#glow)" stroke="#fef08a" stroke-width="1.2"></rect>
+          <circle id="ltL" cx="260" cy="128" r="8" fill="#fff7c2" opacity="0"></circle>
+          <circle id="ltR" cx="520" cy="128" r="8" fill="#fff7c2" opacity="0"></circle>
+        </g>
+        <g id="alive" opacity="0">
+          <rect x="300" y="142" rx="6" width="110" height="44" fill="rgba(99,102,241,.08)"></rect>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- FORM + DASHBOARD -->
+<section id="formSection" class="max-w-6xl mx-auto px-4 pb-16">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Entry form -->
+    <div class="glass p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-sm text-gray-300">Record Today — <b>Dealskart</b></div>
+          <div class="text-xs text-gray-400">One entry per day • Edit allowed</div>
+        </div>
+        <div class="text-xs text-gray-400">Date: <span id="dateToday"></span></div>
+      </div>
+      <div class="mt-4">
+        <label class="text-xs text-gray-300">Earning (₹)</label>
+        <input id="earning" type="number" inputmode="numeric" class="input mt-1" placeholder="e.g. 900"/>
+      </div>
+      <div class="mt-3">
+        <label class="text-xs text-gray-300">Expense (₹)</label>
+        <input id="expense" type="number" inputmode="numeric" class="input mt-1" placeholder="optional"/>
+      </div>
+      <div class="mt-3">
+        <label class="text-xs text-gray-300">Reason</label>
+        <textarea id="reason" rows="3" class="input mt-1" placeholder="fuel, repair..."></textarea>
+      </div>
+      <div class="mt-4 flex gap-2">
+        <button id="saveBtn" class="btn btn-primary flex-1" onclick="onSaveClick()">Submit</button>
+        <button class="btn btn-ghost" onclick="clearForm()">Clear</button>
+      </div>
+      <div class="text-xs text-gray-400 mt-2">If today exists, you'll be asked to edit.</div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="lg:col-span-2 space-y-4">
+      <div class="glass p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div class="grid grid-cols-3 gap-4 w-full">
+          <div>
+            <div class="text-xs text-gray-300">Today (net)</div>
+            <div id="todayCounter" class="text-2xl font-extrabold">₹ 0</div>
+          </div>
+          <div>
+            <div class="text-xs text-gray-300">This Month</div>
+            <div id="monthCounter" class="text-2xl font-extrabold">₹ 0</div>
+          </div>
+          <div>
+            <div class="text-xs text-gray-300">Last 7 days</div>
+            <div id="weekCounter" class="text-2xl font-extrabold">₹ 0</div>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button class="btn btn-ghost" onclick="showWeeklySummary()">Weekly Summary</button>
+          <button class="btn btn-ghost" onclick="showMonthlySummary()">Monthly Summary</button>
+          <button class="btn btn-ghost" onclick="refreshData()">Refresh</button>
+        </div>
+      </div>
+
+      <div id="historyWrap" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+    </div>
+  </div>
+</section>
+
+<footer class="max-w-6xl mx-auto px-4 pb-10 text-sm text-gray-300">
+  © Dealskart — Auto Earnings • Neon street vibes
+</footer>
+
+<script>
+/* ===== CONFIG ===== */
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-axlfzOVpq3UIg8NjdOwZGhHgwFswv7pDgha_jw7rU2FeP4m2aO9M5xV-JcFExyBE/exec"; // <-- replace with your /exec URL
+const PASSWORD = "1912";
+
+/* ===== UTIL ===== */
+const isoToday = ()=> new Date().toISOString().slice(0,10);
+const fmtINR = v => "₹ " + Number(v||0).toLocaleString('en-IN');
+document.getElementById('dateToday').textContent = isoToday();
+
+/* ===== GSAP animations ===== */
+gsap.registerPlugin(ScrollTrigger);
+function buildAutoSequence(){
+  const tl = gsap.timeline({ defaults:{ duration:0.9, ease:'power3.out' }});
+  tl.to("#wheels",{opacity:1, y:-10, onStart:()=> gsap.to(".wheelInner",{rotation:360, duration:1, repeat:-1, ease:'linear'})});
+  tl.to("#chassis",{opacity:1, x:460}, "<0.1");
+  tl.to("#roof",{opacity:1, y:120, onComplete:()=> gsap.to(["#ltL","#ltR"],{opacity:1, repeat:4, yoyo:true, duration:0.2})}, "<0.1");
+  tl.to("#alive",{opacity:1, onComplete:()=> { gsap.to("#autoSVG",{y:-6, repeat:3, yoyo:true, duration:0.18}); }}, "<0.1");
+}
+ScrollTrigger.create({ trigger:"#scene", start:"top center", onEnter: buildAutoSequence, once:true });
+document.getElementById('scene').addEventListener('mouseenter', ()=> gsap.to(["#ltL","#ltR"],{opacity:1,duration:0.12}));
+document.getElementById('scene').addEventListener('mouseleave', ()=> gsap.to(["#ltL","#ltR"],{opacity:0.25,duration:0.4}));
+ScrollTrigger.create({ trigger:"section", start:"top top", end:"bottom bottom", scrub:0.7, onUpdate:self => gsap.to("#autoSVG",{x:(self.progress-0.5)*160, duration:0.8, ease:"power1.out"}) });
+
+/* ===== STATE ===== */
+let allData = [];
+let editingRow = null;
+let currentUser = "Driver";
+
+/* ===== LOGIN ===== */
+function demoLogin(){ document.getElementById('loginPwd').value = PASSWORD; doLogin(); }
+function doLogin(){
+  const p = document.getElementById('loginPwd').value;
+  const u = document.getElementById('loginUser').value || 'Driver';
+  if (p === PASSWORD){
+    currentUser = u;
+    sessionStorage.setItem('dk_logged','1');
+    sessionStorage.setItem('dk_user', u);
+    document.getElementById('loginWrap').style.display='none';
+    document.getElementById('userTag').textContent = `Hi ${u}`; 
+    document.getElementById('userTag').classList.remove('hidden');
+    document.getElementById('logoutBtn').classList.remove('hidden');
+    gsap.to(["#ltL","#ltR"],{opacity:1, repeat:4, yoyo:true, duration:0.12});
+    fetchAll();
+  } else {
+    document.getElementById('lockIcon').textContent = "🔓";
+    setTimeout(()=>document.getElementById('lockIcon').textContent="🔒", 800);
+    toast('Wrong password');
+  }
+}
+function doLogout(){ sessionStorage.clear(); location.reload(); }
+
+/* ===== FETCH ===== */
+async function fetchAll(){
+  try{
+    const res = await fetch(SCRIPT_URL);
+    const j = await res.json();
+    if(j.status === 'ok'){
+      allData = j.data.sort((a,b)=> b.date.localeCompare(a.date));
+      renderDashboard();
+    } else { toast('Server error'); }
+  }catch(e){ toast('Network error'); }
+}
+function refreshData(){ fetchAll(); toast('Refreshed'); }
+
+/* ===== RENDER ===== */
+function renderDashboard(){
+  const wrap = document.getElementById('historyWrap'); wrap.innerHTML='';
+  const today = isoToday();
+  const monthPrefix = today.slice(0,7);
+  const last7 = rangeDays(7);
+
+  let todayNet=0, monthSum=0, weekSum=0;
+
+  allData.forEach(it=>{
+    const earn = Number(it.earning||0), exp = Number(it.expense||0), net = earn-exp;
+    if(it.date===today) todayNet += net;
+    if(it.date.startsWith(monthPrefix)) monthSum += earn;
+    if(last7.includes(it.date)) weekSum += earn;
+
+    const card = document.createElement('div'); card.className="glass p-4 tableRow";
+    card.innerHTML = `
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="text-sm text-gray-300">${it.date}</div>
+          <div class="text-lg font-bold">${fmtINR(earn)}</div>
+          <div class="text-xs text-gray-400">Expense: ${fmtINR(exp)} • Net: <b>${fmtINR(net)}</b></div>
+          <div class="text-sm text-gray-400 mt-1">${it.reason||'—'}</div>
+        </div>
+        <div class="text-right">
+          <button class="btn btn-ghost" onclick="askEdit(${it.row})">Edit</button>
+        </div>
+      </div>`;
+    wrap.appendChild(card);
+  });
+
+  document.getElementById('todayCounter').textContent = fmtINR(todayNet);
+  document.getElementById('monthCounter').textContent = fmtINR(monthSum);
+  document.getElementById('weekCounter').textContent  = fmtINR(weekSum);
+
+  gsap.from(".tableRow",{y:16, opacity:0, stagger:.06, duration:.5, ease:"power2.out"});
+}
+
+function rangeDays(n){ const a=[]; for(let i=0;i<n;i++){ const d=new Date(); d.setDate(d.getDate()-i); a.push(d.toISOString().slice(0,10)); } return a; }
+
+/* ===== ADD / UPDATE (one-per-day rule) ===== */
+async function onSaveClick(){
+  if(sessionStorage.getItem('dk_logged')!=='1'){ toast('Login first'); return; }
+  const earning = document.getElementById('earning').value.trim();
+  if(!earning){ toast('Enter earning'); return; }
+  const expense = document.getElementById('expense').value.trim();
+  const reason  = document.getElementById('reason').value.trim();
+
+  // Client-side block if exists
+  const today = isoToday();
+  const ex = allData.find(r=> r.date===today);
+  if (ex){ openModal('Record Exists', 'Today already recorded. Edit current entry?', 'Edit', ()=> startEdit(ex)); return; }
+
+  // Server-side check (race safety)
+  try{
+    const chk = await fetch(SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body: JSON.stringify({action:'check'})}).then(r=>r.json());
+    if (chk.status==='exists'){
+      openModal('Server says: Exists', 'Today entry already there. Edit now?', 'Edit', ()=> startEdit({row:chk.row, ...chk.record})); 
+      return;
+    }
+  }catch(e){ /* continue */ }
+
+  toggleSave(true);
+  try{
+    const res = await fetch(SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'},
+      body: JSON.stringify({ action:'add', earning, expense, reason, user: currentUser }) });
+    const j = await res.json();
+    if(j.status==='ok'){ successPulse(); await fetchAll(); clearForm(); toast('Saved'); }
+    else if(j.status==='error' && j.message==='entry_exists'){ 
+      openModal('Server says: Exists', 'Today entry already there. Edit now?', 'Edit', ()=> startEdit({row:j.existing.row, ...j.existing.record})); 
+    } else toast('Save error');
+  }catch(e){ toast('Network error'); }
+  finally{ toggleSave(false); }
+}
+
+function toggleSave(dis){
+  const b = document.getElementById('saveBtn');
+  b.disabled = dis; b.textContent = dis? 'Working...' : 'Submit';
+  b.style.opacity = dis? .6 : 1;
+}
+
+function askEdit(row){ const rec = allData.find(r=> r.row===row); if(rec) startEdit(rec); }
+
+function startEdit(rec){
+  document.getElementById('earning').value = rec.earning;
+  document.getElementById('expense').value = rec.expense;
+  document.getElementById('reason').value  = rec.reason;
+  editingRow = rec.row;
+  openModal('Edit Entry', 'Values autofilled for today. Confirm update?', 'Update', submitUpdate);
+}
+
+async function submitUpdate(){
+  if(!editingRow){ toast('No row selected'); return; }
+  const earning = document.getElementById('earning').value.trim();
+  if(!earning){ toast('Earning required'); return; }
+  const expense = document.getElementById('expense').value.trim();
+  const reason  = document.getElementById('reason').value.trim();
+
+  toggleSave(true);
+  try{
+    const res = await fetch(SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'},
+      body: JSON.stringify({ action:'update', row: editingRow, earning, expense, reason, user: currentUser }) });
+    const j = await res.json();
+    if(j.status==='ok'){ successPulse(); editingRow=null; await fetchAll(); clearForm(); closeModal(); toast('Updated'); }
+    else toast('Update error');
+  }catch(e){ toast('Network error'); }
+  finally{ toggleSave(false); }
+}
+
+/* ===== SUMMARY BUTTONS ===== */
+function showWeeklySummary(){
+  const last7 = rangeDays(7);
+  let sumEarn=0, sumExp=0;
+  allData.forEach(r=>{ if(last7.includes(r.date)){ sumEarn += Number(r.earning||0); sumExp += Number(r.expense||0); }});
+  const net = sumEarn - sumExp;
+  headlightsBlink();
+  showSummary('Weekly Summary (Last 7 Days)', sumEarn, sumExp, net);
+}
+function showMonthlySummary(){
+  const ym = isoToday().slice(0,7);
+  let sumEarn=0, sumExp=0;
+  allData.forEach(r=>{ if(r.date.startsWith(ym)){ sumEarn += Number(r.earning||0); sumExp += Number(r.expense||0); }});
+  const net = sumEarn - sumExp;
+  headlightsBlink();
+  showSummary(`Monthly Summary (${ym})`, sumEarn, sumExp, net);
+}
+function showSummary(title, earn, exp, net){
+  const extra = document.getElementById('modalExtra');
+  extra.classList.remove('hidden');
+  extra.innerHTML = `
+    <div class="glass p-3">
+      <div class="grid grid-cols-3 gap-3 text-sm">
+        <div><div class="text-gray-300">Earning</div><div class="font-bold">${fmtINR(earn)}</div></div>
+        <div><div class="text-gray-300">Expense</div><div class="font-bold">${fmtINR(exp)}</div></div>
+        <div><div class="text-gray-300">Net</div><div class="font-bold">${fmtINR(net)}</div></div>
+      </div>
+    </div>`;
+  openModal(title, 'Here is your summary.', 'OK', closeModal);
+}
+
+/* ===== Prompt copy (as you asked) ===== */
+const PROMPT_TEXT = `Build a highly animated, futuristic, and realistic website for recording and displaying the daily earnings of an Auto Rickshaw...
+- Login (username + password 1912), no email.
+- On scroll: wheels roll in → body slides → roof & lights glow → headlights blink → engine vibrates, slight move.
+- Theme: neon yellow/green on black, glassmorphism.
+- One entry per day; if exists, edit flow with confirmation and autofill.
+- Counters: Today (net), This Month, Last 7 Days (auto from data).
+- Weekly/Monthly summary buttons with popup (earning/expense/net).
+- Data via Google Sheets (Apps Script). Fully responsive & smooth.`;
+function openPromptCopy(){
+  navigator.clipboard.writeText(PROMPT_TEXT).then(()=> toast('Prompt copied'));
+}
+
+/* ===== UI helpers ===== */
+function successPulse(){ showTick(); gsap.to("#autoSVG",{x:'+=14', duration:.35, yoyo:true, repeat:1}); gsap.to(".wheelInner",{rotation:360, duration:.7, ease:'linear'}); }
+function showTick(){ const w=document.getElementById('tickWrap'); w.style.display='block'; setTimeout(()=> w.style.display='none',900); }
+function headlightsBlink(){ gsap.to(["#ltL","#ltR"],{opacity:1, repeat:4, yoyo:true, duration:.12}); }
+function clearForm(){ earning.value=''; expense.value=''; reason.value=''; }
+function toast(msg){ const el=document.createElement('div'); el.textContent=msg; el.style.position='fixed'; el.style.right='18px'; el.style.bottom='18px'; el.style.padding='10px 14px'; el.style.borderRadius='10px'; el.style.background='rgba(255,255,255,.08)'; el.style.zIndex=300; document.body.appendChild(el); setTimeout(()=> el.remove(),2200); }
+
+/* modal */
+function openModal(title,msg,confirmText,cb){ document.getElementById('modalTitle').textContent=title; document.getElementById('modalMsg').textContent=msg; document.getElementById('modalBg').style.display='flex'; const btn=document.getElementById('modalConfirm'); btn.textContent=confirmText||'OK'; btn.onclick=()=> cb && cb(); }
+function closeModal(){ document.getElementById('modalBg').style.display='none'; document.getElementById('modalExtra').classList.add('hidden'); document.getElementById('modalExtra').innerHTML=''; }
+
+/* numeric sanitize */
+earning.addEventListener('input', e=> e.target.value = e.target.value.replace(/[^0-9.]/g,''));
+expense.addEventListener('input', e=> e.target.value = e.target.value.replace(/[^0-9.]/g,''));
+
+/* init */
+window.addEventListener('load', ()=>{
+  document.getElementById('dateToday').textContent = isoToday();
+  if (sessionStorage.getItem('dk_logged')==='1'){
+    currentUser = sessionStorage.getItem('dk_user') || 'Driver';
+    document.getElementById('loginWrap').style.display='none';
+    document.getElementById('userTag').textContent=`Hi ${currentUser}`;
+    document.getElementById('userTag').classList.remove('hidden');
+    document.getElementById('logoutBtn').classList.remove('hidden');
+    fetchAll();
+  }
+});
+</script>
+</body>
+</html>
