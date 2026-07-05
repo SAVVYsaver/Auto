@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DealsKart Auto Diary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div id="loadingOverlay" class="hidden">
+  <div class="spinner"></div>
+  <p id="loadingText">Loading...</p>
+</div>
+
+<!-- ============== AUTH: LOGIN ============== -->
+<div id="viewLogin" class="auth-wrap">
+  <div class="auth-glow"></div>
+  <div class="auth-card">
+    <div class="brand-row">
+      <div class="brand-logo">DK</div>
+      <div>
+        <div class="brand-name">DealsKart Auto Diary</div>
+        <div class="brand-sub">Driver &amp; Admin Management</div>
+      </div>
+    </div>
+
+    <div class="auto-hero">
+      <div class="road"></div>
+      <svg class="auto-svg" width="70" height="40" viewBox="0 0 70 40">
+        <path d="M4 26 L8 14 Q10 10 15 10 H45 Q52 10 55 16 L62 26 Z" fill="#f5a623" stroke="#c97e10" stroke-width="1"/>
+        <rect x="14" y="12" width="24" height="10" rx="2" fill="#1e222c" opacity="0.6"/>
+        <circle class="wheel" cx="16" cy="27" r="6" fill="#111319" stroke="#3a3f4b" stroke-width="2"/>
+        <circle class="wheel" cx="50" cy="27" r="6" fill="#111319" stroke="#3a3f4b" stroke-width="2"/>
+      </svg>
+    </div>
+
+    <div class="role-toggle">
+      <button id="btnRoleUser" class="active" onclick="setLoginRole('driver')">Driver Login</button>
+      <button id="btnRoleAdmin" onclick="setLoginRole('admin')">Admin Login</button>
+    </div>
+
+    <div id="loginMsg"></div>
+
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="loginUsername" placeholder="Enter your username" />
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="Enter your password" />
+    </div>
+    <button class="btn btn-primary" onclick="handleLogin()">Login</button>
+
+    <div class="auth-links">
+      <a href="#" onclick="showView('viewRegister'); return false;" id="linkRegister">Create driver account</a>
+      <a href="#" onclick="showView('viewForgot'); return false;">Forgot password?</a>
+    </div>
+  </div>
+</div>
+
+<!-- ============== AUTH: REGISTER ============== -->
+<div id="viewRegister" class="auth-wrap hidden">
+  <div class="auth-glow"></div>
+  <div class="auth-card" style="max-width:480px;">
+    <div class="brand-row">
+      <div class="brand-logo">DK</div>
+      <div>
+        <div class="brand-name">Create Driver Account</div>
+        <div class="brand-sub">Your account needs admin approval before login</div>
+      </div>
+    </div>
+    <div id="registerMsg"></div>
+    <div class="form-row">
+      <div class="field"><label>Full Name</label><input id="regName" type="text" /></div>
+      <div class="field"><label>Username</label><input id="regUsername" type="text" /></div>
+      <div class="field"><label>PAN Number</label><input id="regPan" type="text" /></div>
+      <div class="field"><label>Date of Birth</label><input id="regDob" type="date" /></div>
+      <div class="field"><label>Phone Number</label><input id="regPhone" type="text" /></div>
+      <div class="field"><label>Password</label><input id="regPassword" type="password" /></div>
+    </div>
+    <div class="field"><label>Address</label><textarea id="regAddress"></textarea></div>
+    <button class="btn btn-primary" onclick="handleRegister()">Submit Registration</button>
+    <div class="auth-links"><a href="#" onclick="showView('viewLogin'); return false;">Back to login</a><span></span></div>
+  </div>
+</div>
+
+<!-- ============== AUTH: FORGOT PASSWORD ============== -->
+<div id="viewForgot" class="auth-wrap hidden">
+  <div class="auth-glow"></div>
+  <div class="auth-card">
+    <div class="brand-row">
+      <div class="brand-logo">DK</div>
+      <div>
+        <div class="brand-name">Reset Password</div>
+        <div class="brand-sub">Verify your identity to continue</div>
+      </div>
+    </div>
+    <div id="forgotMsg"></div>
+    <div class="field"><label>Username</label><input id="fgUsername" type="text" /></div>
+    <div class="field"><label>PAN Number</label><input id="fgPan" type="text" /></div>
+    <div class="field"><label>Date of Birth</label><input id="fgDob" type="date" /></div>
+    <div class="field"><label>New Password</label><input id="fgNewPassword" type="password" /></div>
+    <button class="btn btn-primary" onclick="handleResetPassword()">Reset Password</button>
+    <div class="auth-links"><a href="#" onclick="showView('viewLogin'); return false;">Back to login</a><span></span></div>
+  </div>
+</div>
+
+<!-- ============== APP SHELL ============== -->
+<div id="appShell" class="hidden">
+  <div class="overlay-scrim" id="overlayScrim" onclick="toggleSidebar(false)"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand-row">
+      <div class="brand-logo">DK</div>
+      <div>
+        <div class="brand-name" style="font-size:15px;">DealsKart</div>
+        <div class="brand-sub">Auto Diary</div>
+      </div>
+    </div>
+    <nav id="navItems">
+      <div class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')"><span class="nav-icon">&#9673;</span> Dashboard</div>
+      <div class="nav-item" data-tab="entry" onclick="switchTab('entry')"><span class="nav-icon">&#9998;</span> Daily Entry</div>
+      <div class="nav-item" data-tab="earnings" onclick="switchTab('earnings')"><span class="nav-icon">&#8801;</span> Earnings</div>
+      <div class="nav-item" data-tab="profile" onclick="switchTab('profile')"><span class="nav-icon">&#9679;</span> Profile</div>
+      <div class="nav-item" data-tab="chat" onclick="switchTab('chat')"><span class="nav-icon">&#9993;</span> Chat</div>
+      <div class="nav-item hidden" id="navAdmin" data-tab="admin" onclick="switchTab('admin')"><span class="nav-icon">&#9881;</span> Admin</div>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn btn-outline btn-block" onclick="handleLogout()">Logout</button>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <div class="topbar">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button class="mobile-topbar-toggle btn btn-ghost btn-sm" onclick="toggleSidebar(true)">&#9776;</button>
+        <div class="topbar-title" id="topbarTitle">Dashboard</div>
+      </div>
+      <div class="topbar-right">
+        <div class="session-timer" id="sessionTimer">Session: 02:00</div>
+        <div class="avatar" id="topbarAvatar">D</div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD TAB -->
+      <div class="tab-panel active" id="tab-dashboard">
+        <div class="grid grid-4" style="margin-bottom:20px;">
+          <div class="card stat-card"><div class="stat-label">Available Balance</div><div class="stat-value accent" id="dashBalance">₹0</div></div>
+          <div class="card stat-card"><div class="stat-label">Cash Available</div><div class="stat-value" id="dashCash">₹0</div></div>
+          <div class="card stat-card"><div class="stat-label">Online Available</div><div class="stat-value" id="dashOnline">₹0</div></div>
+          <div class="card stat-card"><div class="stat-label">Total Deposited</div><div class="stat-value green" id="dashDeposited">₹0</div></div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+          <div class="section-title">Missed Entry Dates</div>
+          <div id="missedDatesWrap" class="chip-row"><span class="text-muted">No missed dates 🎉</span></div>
+        </div>
+
+        <div class="grid grid-3">
+          <div class="card"><div class="section-title">Earning Split</div><div class="chart-box"><canvas id="chartEarningSplit"></canvas></div></div>
+          <div class="card"><div class="section-title">Expense vs Saving</div><div class="chart-box"><canvas id="chartExpenseSaving"></canvas></div></div>
+          <div class="card"><div class="section-title">Wallet Split</div><div class="chart-box"><canvas id="chartWalletSplit"></canvas></div></div>
+        </div>
+      </div>
+
+      <!-- DAILY ENTRY TAB -->
+      <div class="tab-panel" id="tab-entry">
+        <div class="grid grid-2" style="align-items:start;">
+          <div class="card">
+            <div class="section-title">Add Daily Entry</div>
+            <div id="entryMsg"></div>
+            <div class="field"><label>Date</label><input type="date" id="entryDate" /></div>
+            <div class="form-row">
+              <div class="field"><label>Cash Earning (₹)</label><input type="number" id="entryCash" oninput="recalcEntry()" /></div>
+              <div class="field"><label>Online Earning (₹)</label><input type="number" id="entryOnline" oninput="recalcEntry()" /></div>
+            </div>
+            <div class="field"><label>Total Earning (auto)</label><input type="text" id="entryTotal" readonly /></div>
+            <div class="form-row">
+              <div class="field"><label>Expense Amount (₹)</label><input type="number" id="entryExpense" oninput="recalcEntry()" /></div>
+              <div class="field"><label>Expense Reason</label><input type="text" id="entryExpenseReason" /></div>
+            </div>
+            <div class="field"><label>Today's Saving (auto)</label><input type="text" id="entrySaving" readonly /></div>
+            <button class="btn btn-primary" onclick="handleAddEntry()">Save Entry</button>
+          </div>
+          <div class="card">
+            <div class="section-title">Missed Dates</div>
+            <p class="text-muted" style="font-size:13px;">Click a date to fill it into the form.</p>
+            <div id="missedDatesWrap2" class="chip-row"><span class="text-muted">No missed dates 🎉</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EARNINGS TAB -->
+      <div class="tab-panel" id="tab-earnings">
+        <div class="grid grid-4" style="margin-bottom:20px;">
+          <div class="card stat-card"><div class="stat-label">Last 7 Days</div><div class="stat-value" id="statLast7">₹0</div></div>
+          <div class="card stat-card"><div class="stat-label">This Month</div><div class="stat-value" id="statMonth">₹0</div></div>
+          <div class="card stat-card"><div class="stat-label">Total Earning</div><div class="stat-value accent" id="statTotal">₹0</div></div>
+          <div class="card stat-card"><div class="stat-label">Net Saving</div><div class="stat-value green" id="statSaving">₹0</div></div>
+        </div>
+        <div class="card" style="margin-bottom:20px;">
+          <div class="section-title">Entry Records</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Driver</th><th>Date</th><th>Cash</th><th>Online</th><th>Total</th><th>Expense</th><th>Reason</th><th>Balance</th></tr></thead>
+              <tbody id="recordsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-title">Bank Deposit History</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Driver</th><th>Date</th><th>Cash Deposit</th><th>Online Deposit</th><th>Total Deposit</th></tr></thead>
+              <tbody id="depositsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROFILE TAB -->
+      <div class="tab-panel" id="tab-profile">
+        <div class="grid grid-2" style="align-items:start;">
+          <div class="card">
+            <div class="section-title">My Profile</div>
+            <div id="profileMsg"></div>
+            <div class="photo-upload">
+              <div class="photo-preview" id="profilePhotoPreview">D</div>
+              <div>
+                <input type="file" id="profilePhotoInput" accept="image/*" onchange="handlePhotoSelect(event)" />
+                <div class="text-muted" style="font-size:11.5px; margin-top:4px;">JPG/PNG, kept small for storage</div>
+              </div>
+            </div>
+            <div class="field"><label>Name</label><input type="text" id="profileName" /></div>
+            <div class="field"><label>Phone</label><input type="text" id="profilePhone" /></div>
+            <div class="field"><label>Address</label><textarea id="profileAddress"></textarea></div>
+            <button class="btn btn-primary" onclick="handleUpdateProfile()">Save Changes</button>
+          </div>
+          <div class="card">
+            <div class="section-title">Account Details</div>
+            <div class="field"><label>Username</label><input type="text" id="profileUsername" readonly /></div>
+            <div class="field"><label>PAN Number</label><input type="text" id="profilePan" readonly /></div>
+            <div class="field"><label>Date of Birth</label><input type="text" id="profileDob" readonly /></div>
+            <div class="field"><label>Admin Notes</label><textarea id="profileNotes" readonly></textarea></div>
+            <hr style="border-color: var(--border); margin: 18px 0;" />
+            <div class="section-title">Contact Admin</div>
+            <p style="font-size:13.5px; color:var(--text-1); line-height:1.7;">
+              <strong>Name:</strong> Rahul Kumar<br/>
+              <strong>Role:</strong> Administrator<br/>
+              <strong>Phone:</strong> <span id="adminPhone">—</span><br/>
+              <strong>Address:</strong> <span id="adminAddress">—</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHAT TAB -->
+      <div class="tab-panel" id="tab-chat">
+        <div class="card">
+          <div class="section-title">Chat</div>
+          <div class="chat-layout">
+            <div class="chat-contacts" id="chatContacts">
+              <!-- populated for admin; driver sees fixed admin contact -->
+            </div>
+            <div class="chat-panel">
+              <div class="chat-messages" id="chatMessages"></div>
+              <div class="chat-input-row">
+                <input type="text" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter') handleSendChat();" />
+                <button class="btn btn-primary" onclick="handleSendChat()">Send</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN TAB -->
+      <div class="tab-panel" id="tab-admin">
+        <div class="grid grid-4" style="margin-bottom:20px;">
+          <div class="card stat-card"><div class="stat-label">Active Users</div><div class="stat-value accent" id="adminActiveUsers">0</div></div>
+          <div class="card stat-card"><div class="stat-label">Pending Approvals</div><div class="stat-value" id="adminPending">0</div></div>
+          <div class="card stat-card"><div class="stat-label">Avg Daily Earning</div><div class="stat-value" id="adminAvgEarning">₹0</div></div>
+          <div class="card stat-card"><div class="stat-label">Avg Expense</div><div class="stat-value" id="adminAvgExpense">₹0</div></div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+          <div class="section-title">Pending Approvals</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Username</th><th>Phone</th><th>PAN</th><th>Created</th><th>Action</th></tr></thead>
+              <tbody id="pendingTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+          <div class="section-title">All Registered Users</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Username</th><th>Phone</th><th>Status</th><th>Role</th><th>Created</th><th>Action</th></tr></thead>
+              <tbody id="allUsersTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">Deposit Control</div>
+          <div class="field">
+            <label>Select Driver</label>
+            <select id="depositDriverSelect" onchange="handleDepositDriverChange()"></select>
+          </div>
+          <div class="grid grid-3" style="margin-bottom:16px;">
+            <div class="card stat-card"><div class="stat-label">Cash Available</div><div class="stat-value" id="depCashAvail">₹0</div></div>
+            <div class="card stat-card"><div class="stat-label">Online Available</div><div class="stat-value" id="depOnlineAvail">₹0</div></div>
+            <div class="card stat-card"><div class="stat-label">Pending Deposit</div><div class="stat-value accent" id="depPending">₹0</div></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>Cash Deposit Amount</label><input type="number" id="depCashInput" /></div>
+            <div class="field"><label>Online Deposit Amount</label><input type="number" id="depOnlineInput" /></div>
+          </div>
+          <div id="depositMsg"></div>
+          <button class="btn btn-primary" onclick="handleDepositNow()">Deposit Now</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
